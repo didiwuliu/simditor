@@ -1,9 +1,7 @@
 
-class UndoManager extends Plugin
+class UndoManager extends SimpleModule
 
-  @className: 'UndoManager'
-
-  _stack: []
+  @pluginName: 'UndoManager'
 
   _index: -1
 
@@ -11,20 +9,19 @@ class UndoManager extends Plugin
 
   _timer: null
 
-  constructor: (args...) ->
-    super args...
-    @editor = @widget
-
   _init: ->
+    @editor = @_module
+    @_stack = []
+
     if @editor.util.os.mac
-      undoShortcut = 'cmd+90'
-      redoShortcut = 'shift+cmd+90'
+      undoShortcut = 'cmd+z'
+      redoShortcut = 'shift+cmd+z'
     else if @editor.util.os.win
-      undoShortcut = 'ctrl+90'
-      redoShortcut = 'ctrl+89'
+      undoShortcut = 'ctrl+z'
+      redoShortcut = 'ctrl+y'
     else
-      undoShortcut = 'ctrl+90'
-      redoShortcut = 'shift+ctrl+90'
+      undoShortcut = 'ctrl+z'
+      redoShortcut = 'shift+ctrl+z'
 
 
     @editor.inputManager.addShortcut undoShortcut, (e) =>
@@ -46,9 +43,12 @@ class UndoManager extends Plugin
 
       @_timer = setTimeout =>
         @_pushUndoState()
+        @_timer = null
       , 200
 
   _pushUndoState: ->
+    return if @editor.triggerHandler('pushundostate') == false
+
     currentState = @currentState()
     html = @editor.body.html()
     return if currentState and currentState.html == html
@@ -84,7 +84,6 @@ class UndoManager extends Plugin
     @editor.sync()
 
     @editor.trigger 'valuechanged', ['undo']
-    @editor.trigger 'selectionchanged', ['undo']
 
   redo: ->
     return if @_index < 0 or @_stack.length < @_index + 2
@@ -100,9 +99,9 @@ class UndoManager extends Plugin
     @editor.sync()
 
     @editor.trigger 'valuechanged', ['undo']
-    @editor.trigger 'selectionchanged', ['undo']
 
   update: () ->
+    return if @_timer
     currentState = @currentState()
     return unless currentState
 

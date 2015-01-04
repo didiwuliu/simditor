@@ -70,7 +70,6 @@ class ListButton extends Button
     @editor.selection.restore()
 
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
 
   _convertEl: (el) ->
     $el = $(el)
@@ -103,33 +102,31 @@ class ListButton extends Button
 class OrderListButton extends ListButton
   type: 'ol'
   name: 'ol'
-  title: '有序列表'
   icon: 'list-ol'
   htmlTag: 'ol'
-  shortcut: 'cmd+191'
-  render: ->
+  shortcut: 'cmd+/'
+  _init: ->
     if @editor.util.os.mac
       @title = @title + ' ( Cmd + / )'
     else
       @title = @title + ' ( ctrl + / )'
-      @shortcut = 'ctrl+191'
+      @shortcut = 'ctrl+/'
     super()
 
 class UnorderListButton extends ListButton
   type: 'ul'
   name: 'ul'
-  title: '无序列表'
   icon: 'list-ul'
   htmlTag: 'ul'
-  shortcut: 'cmd+190'
-  render: ->
+  shortcut: 'cmd+.'
+  _init: ->
     if @editor.util.os.mac
       @title = @title + ' ( Cmd + . )'
     else
       @title = @title + ' ( Ctrl + . )'
-      @shortcut = 'ctrl+190'
+      @shortcut = 'ctrl+.'
     super()
 
-Simditor.Toolbar.addButton(OrderListButton)
-Simditor.Toolbar.addButton(UnorderListButton)
+Simditor.Toolbar.addButton OrderListButton
+Simditor.Toolbar.addButton UnorderListButton
 

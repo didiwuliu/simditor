@@ -1,28 +1,29 @@
 
-class Util extends Plugin
+class Util extends SimpleModule
 
-  @className: 'Util'
-
-  constructor: (args...) ->
-    super args...
-    @phBr = '' if @browser.msie and @browser.version < 11
-    @editor = @widget
+  @pluginName: 'Util'
 
   _init: ->
+    @editor = @_module
+    @phBr = '' if @browser.msie and @browser.version < 11
 
   phBr: '<br/>'
 
   os: (->
+    os = {}
     if /Mac/.test navigator.appVersion
-      mac: true
+      os.mac = true
     else if /Linux/.test navigator.appVersion
-      linux: true
+      os.linux = true
     else if /Win/.test navigator.appVersion
-      win: true
+      os.win = true
     else if /X11/.test navigator.appVersion
-      unix: true
-    else
-      {}
+      os.unix = true
+
+    if /Mobi/.test navigator.appVersion
+      os.mobile = true
+
+    os
   )()
 
   browser: (->
@@ -34,22 +35,40 @@ class Util extends Plugin
 
     if ie
       msie: true
-      version: ua.match(/(msie |rv:)(\d+(\.\d+)?)/i)[2]
+      version: ua.match(/(msie |rv:)(\d+(\.\d+)?)/i)?[2] * 1
     else if chrome
       webkit: true
       chrome: true
-      version: ua.match(/(?:chrome|crios)\/(\d+(\.\d+)?)/i)[1]
+      version: ua.match(/(?:chrome|crios)\/(\d+(\.\d+)?)/i)?[1] * 1
     else if safari
       webkit: true
       safari: true
-      version: ua.match(/version\/(\d+(\.\d+)?)/i)[1]
+      version: ua.match(/version\/(\d+(\.\d+)?)/i)?[1] * 1
     else if firefox
       mozilla: true
       firefox: true
-      version: ua.match(/firefox\/(\d+(\.\d+)?)/i)[1]
+      version: ua.match(/firefox\/(\d+(\.\d+)?)/i)?[1] * 1
     else
       {}
   )()
+
+  # check whether the browser supports selectionchange event
+  supportSelectionChange: (->
+    onselectionchange = document.onselectionchange
+    if onselectionchange != undefined
+      try
+        document.onselectionchange = 0
+        return document.onselectionchange == null
+      catch e
+      finally
+        document.onselectionchange = onselectionchange
+    false
+  )()
+
+  # force element to reflow, about relow: 
+  # http://blog.letitialew.com/post/30425074101/repaints-and-reflows-manipulating-the-dom-responsibly
+  reflow: (el = document) ->
+    $(el)[0].offsetHeight
 
   metaKey: (e) ->
     isMac = /Mac/.test navigator.userAgent
@@ -57,7 +76,7 @@ class Util extends Plugin
 
   isEmptyNode: (node) ->
     $node = $(node)
-    !$node.text() and !$node.find(':not(br, span)').length
+    $node.is(':empty') or (!$node.text() and !$node.find(':not(br, span, div)').length)
 
   isBlockNode: (node) ->
     node = $(node)[0]
@@ -187,7 +206,6 @@ class Util extends Plugin
       @editor.selection.insertNode spaceNode
 
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
     true
 
   outdent: () ->
@@ -232,7 +250,6 @@ class Util extends Plugin
       return false
 
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
     true
 
   # convert base64 data url to blob object for pasting images in firefox and IE11

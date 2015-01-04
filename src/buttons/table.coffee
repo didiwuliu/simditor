@@ -5,16 +5,14 @@ class TableButton extends Button
 
   icon: 'table'
 
-  title: '表格'
-
   htmlTag: 'table'
 
   disableTag: 'pre, li, blockquote'
 
   menu: true
 
-  constructor: (args...) ->
-    super args...
+  _init: ->
+    super()
 
     $.merge @editor.formatter._allowedTags, ['tbody', 'tr', 'td', 'colgroup', 'col']
     $.extend(@editor.formatter._allowedAttributes, {
@@ -173,23 +171,23 @@ class TableButton extends Button
     $table.parent().replaceWith($table)
 
   renderMenu: ->
-    $('''
+    $("""
       <div class="menu-create-table">
       </div>
       <div class="menu-edit-table">
         <ul>
-          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="deleteRow"><span>删除行</span></a></li>
-          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="insertRowAbove"><span>在上面插入行</span></a></li>
-          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="insertRowBelow"><span>在下面插入行</span></a></li>
+          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="deleteRow"><span>#{ @_t 'deleteRow' }</span></a></li>
+          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="insertRowAbove"><span>#{ @_t 'insertRowAbove' }</span></a></li>
+          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="insertRowBelow"><span>#{ @_t 'insertRowBelow' }</span></a></li>
           <li><span class="separator"></span></li>
-          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="deleteCol"><span>删除列</span></a></li>
-          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="insertColLeft"><span>在左边插入列</span></a></li>
-          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="insertColRight"><span>在右边插入列</span></a></li>
+          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="deleteCol"><span>#{ @_t 'delteColumn' }</span></a></li>
+          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="insertColLeft"><span>#{ @_t 'insertColumnLeft' }</span></a></li>
+          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="insertColRight"><span>#{ @_t 'insertColumnRight' }</span></a></li>
           <li><span class="separator"></span></li>
-          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="deleteTable"><span>删除表格</span></a></li>
+          <li><a tabindex="-1" unselectable="on" class="menu-item" href="javascript:;" data-param="deleteTable"><span>#{ @_t 'deleteTable' }</span></a></li>
         </ul>
       </div>
-    ''').appendTo(@menuWrapper)
+    """).appendTo(@menuWrapper)
 
     @createMenu = @menuWrapper.find('.menu-create-table')
     @editMenu = @menuWrapper.find('.menu-edit-table')
@@ -225,7 +223,6 @@ class TableButton extends Button
       @decorate $table
       @editor.selection.setRangeAtStartOf $table.find('td:first')
       @editor.trigger 'valuechanged'
-      @editor.trigger 'selectionchanged'
       false
 
   createTable: (row, col, phBr) ->
@@ -350,7 +347,6 @@ class TableButton extends Button
       return
 
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
 
 
 Simditor.Toolbar.addButton TableButton

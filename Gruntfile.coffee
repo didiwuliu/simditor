@@ -4,61 +4,39 @@ module.exports = (grunt) ->
 
     pkg: grunt.file.readJSON 'package.json'
 
-    concat:
-      simditor:
-        src: [
-          'src/selection.coffee',
-          'src/formatter.coffee',
-          'src/inputManager.coffee',
-          'src/keystroke.coffee',
-          'src/undoManager.coffee',
-          'src/util.coffee',
-          'src/toolbar.coffee',
-          'src/core.coffee',
-          'src/buttons/button.coffee',
-          'src/buttons/popover.coffee',
-          'src/buttons/title.coffee',
-          'src/buttons/bold.coffee',
-          'src/buttons/italic.coffee',
-          'src/buttons/underline.coffee',
-          'src/buttons/list.coffee',
-          'src/buttons/blockquote.coffee',
-          'src/buttons/code.coffee',
-          'src/buttons/link.coffee',
-          'src/buttons/image.coffee',
-          'src/buttons/indent.coffee',
-          'src/buttons/outdent.coffee',
-          'src/buttons/hr.coffee',
-          'src/buttons/table.coffee',
-          'src/buttons/strikethrough.coffee'
-        ]
-        dest: 'src/simditor.coffee'
-      all:
-        src: [
-          'vendor/bower/simple-module/lib/module.js',
-          'vendor/bower/simple-uploader/lib/uploader.js',
-          'lib/simditor.js'
-        ]
-        dest: 'lib/simditor-all.js'
-
-    sass:
-      simditor:
-        options:
-          style: 'expanded'
-          bundleExec: true
-        files:
-          'styles/simditor.css': 'styles/simditor.scss'
-      site:
-        options:
-          style: 'expanded'
-          bundleExec: true
-        files:
-          'site/assets/styles/app.css': 'site/assets/_sass/app.scss'
-
     coffee:
       simditor:
+        options:
+          bare: true
         files:
-          'lib/simditor.js': 'src/simditor.coffee'
+          'lib/simditor.js': [
+            'src/selection.coffee',
+            'src/formatter.coffee',
+            'src/inputManager.coffee',
+            'src/keystroke.coffee',
+            'src/undoManager.coffee',
+            'src/util.coffee',
+            'src/toolbar.coffee',
+            'src/core.coffee',
+            'src/i18n.coffee',
+            'src/buttons/button.coffee',
+            'src/buttons/popover.coffee',
+            'src/buttons/title.coffee',
+            'src/buttons/bold.coffee',
+            'src/buttons/italic.coffee',
+            'src/buttons/underline.coffee',
+            'src/buttons/color.coffee',
+            'src/buttons/list.coffee',
+            'src/buttons/blockquote.coffee',
+            'src/buttons/code.coffee',
+            'src/buttons/link.coffee',
+            'src/buttons/image.coffee',
+            'src/buttons/indent.coffee',
+            'src/buttons/outdent.coffee',
+            'src/buttons/hr.coffee',
+            'src/buttons/table.coffee',
+            'src/buttons/strikethrough.coffee'
+          ]
       site:
         expand: true
         flatten: true
@@ -66,8 +44,47 @@ module.exports = (grunt) ->
         dest: 'site/assets/scripts/'
         ext: '.js'
 
-    copy:
+      spec:
+        expand: true
+        flatten: true
+        src: 'spec/src/*.coffee'
+        dest: 'spec'
+        ext: '.js'
+
+    sass:
+      simditor:
+        options:
+          style: 'expanded'
+          bundleExec: true
+          sourcemap: 'none'
+        files:
+          'styles/simditor.css': 'styles/simditor.scss'
       site:
+        options:
+          style: 'expanded'
+          bundleExec: true
+          sourcemap: 'none'
+        files:
+          'site/assets/styles/app.css': 'site/assets/_sass/app.scss'
+          'site/assets/styles/mobile.css': 'site/assets/_sass/mobile.scss'
+
+    umd:
+      all:
+        src: 'lib/simditor.js'
+        template: 'umd'
+        amdModuleId: 'simditor'
+        objectToExport: 'Simditor'
+        globalAlias: 'Simditor'
+        deps:
+          'default': ['$', 'SimpleModule', 'simpleUploader']
+          amd: ['jquery', 'simple-module', 'simple-uploader']
+          cjs: ['jquery', 'simple-module', 'simple-uploader']
+          global:
+            items: ['jQuery', 'SimpleModule', 'root.simple && simple.uploader']
+            prefix: ''
+
+    copy:
+      vendor:
         files: [{
           src: 'vendor/bower/jquery/dist/jquery.min.js',
           dest: 'site/assets/scripts/jquery.min.js'
@@ -79,14 +96,7 @@ module.exports = (grunt) ->
           flatten: true,
           src: 'vendor/bower/fontawesome/fonts/*',
           dest: 'site/assets/fonts/'
-        }, {
-          src: 'styles/simditor.css',
-          dest: 'site/assets/styles/simditor.css'
-        }, {
-          src: 'lib/simditor-all.js',
-          dest: 'site/assets/scripts/simditor-all.js'
         }]
-
       styles:
         files: [{
           src: 'styles/simditor.css',
@@ -94,34 +104,36 @@ module.exports = (grunt) ->
         }]
       scripts:
         files: [{
-          src: 'lib/simditor-all.js',
-          dest: 'site/assets/scripts/simditor-all.js'
+          src: 'vendor/bower/simple-module/lib/module.js',
+          dest: 'site/assets/scripts/module.js'
+        }, {
+          src: 'vendor/bower/simple-uploader/lib/uploader.js',
+          dest: 'site/assets/scripts/uploader.js'
+        }, {
+          src: 'vendor/bower/simple-hotkeys/lib/hotkeys.js',
+          dest: 'site/assets/scripts/hotkeys.js'
+        }, {
+          src: 'lib/simditor.js',
+          dest: 'site/assets/scripts/simditor.js'
         }]
-
       package:
         files: [{
           expand: true,
           flatten: true
           src: 'lib/*',
-          dest: 'package/scripts/js/'
+          dest: 'package/scripts/'
         }, {
           src: 'vendor/bower/jquery/dist/jquery.min.js',
-          dest: 'package/scripts/js/jquery.min.js'
+          dest: 'package/scripts/jquery.min.js'
         }, {
           src: 'vendor/bower/simple-module/lib/module.js',
-          dest: 'package/scripts/js/module.js'
+          dest: 'package/scripts/module.js'
         }, {
           src: 'vendor/bower/simple-uploader/lib/uploader.js',
-          dest: 'package/scripts/js/uploader.js'
+          dest: 'package/scripts/uploader.js'
         }, {
-          src: 'src/simditor.coffee',
-          dest: 'package/scripts/coffee/simditor.coffee'
-        }, {
-          src: 'vendor/bower/simple-module/src/module.coffee',
-          dest: 'package/scripts/coffee/module.coffee'
-        }, {
-          src: 'vendor/bower/simple-uploader/src/uploader.coffee',
-          dest: 'package/scripts/coffee/uploader.coffee'
+          src: 'vendor/bower/simple-hotkeys/lib/hotkeys.js',
+          dest: 'package/scripts/hotkeys.js'
         }, {
           expand: true,
           flatten: true
@@ -146,23 +158,28 @@ module.exports = (grunt) ->
     watch:
       styles:
         files: ['styles/*.scss']
-        tasks: ['sass:simditor', 'copy:styles', 'shell']
+        tasks: ['sass:simditor', 'copy:styles', 'jekyll']
       scripts:
         files: ['src/*.coffee', 'src/buttons/*.coffee']
-        tasks: ['concat:simditor', 'coffee:simditor', 'concat:all', 'copy:site', 'shell']
+        tasks: ['coffee:simditor', 'umd', 'copy:scripts', 'jekyll']
       siteStyles:
         files: ['site/assets/_sass/*.scss']
         tasks: ['sass:site', 'shell']
       siteScripts:
         files: ['site/assets/_coffee/*.coffee']
-        tasks: ['coffee:site', 'shell']
+        tasks: ['coffee:site', 'jekyll']
       jekyll:
         files: ['site/**/*.html', 'site/**/*.md', 'site/**/*.yml']
-        tasks: ['shell']
+        tasks: ['jekyll']
+      spec:
+        files: ['spec/**/*.coffee']
+        tasks: ['coffee']
 
-    shell:
-      jekyll:
-        command: 'bundle exec jekyll build'
+    jekyll:
+      site:
+        options:
+          bundleExec: true
+          config: 'jekyll.yml'
 
     express:
       server:
@@ -173,8 +190,10 @@ module.exports = (grunt) ->
     uglify:
       simditor:
         files:
-          'package/scripts/js/simditor-all.min.js': 'package/scripts/js/simditor-all.js'
-          'package/scripts/js/simditor.min.js': 'package/scripts/js/simditor.js'
+          'package/scripts/module.min.js': 'package/scripts/module.js'
+          'package/scripts/uploader.min.js': 'package/scripts/uploader.js'
+          'package/scripts/hotkeys.min.js': 'package/scripts/hotkeys.js'
+          'package/scripts/simditor.min.js': 'package/scripts/simditor.js'
 
     compress:
       package:
@@ -191,19 +210,38 @@ module.exports = (grunt) ->
       package:
         src: ['package/']
 
+    jasmine:
+      test:
+        src: ['lib/**/*.js']
+        options:
+          outfile: 'spec/index.html'
+          styles: [
+            'vendor/bower/fontawesome/css/font-awesome.css'
+            'styles/simditor.css'
+          ]
+          specs: 'spec/*.js'
+          vendor: [
+            'vendor/bower/jquery/dist/jquery.min.js'
+            'vendor/bower/jasmine-jquery/lib/jasmine-jquery.js'
+            'vendor/bower/simple-module/lib/module.js'
+            'vendor/bower/simple-uploader/lib/uploader.js'
+            'vendor/bower/simple-hotkeys/lib/hotkeys.js'
+          ]
+
 
   grunt.loadNpmTasks 'grunt-contrib-sass'
   grunt.loadNpmTasks 'grunt-contrib-coffee'
-  grunt.loadNpmTasks 'grunt-contrib-concat'
   grunt.loadNpmTasks 'grunt-contrib-watch'
   grunt.loadNpmTasks 'grunt-contrib-copy'
   grunt.loadNpmTasks 'grunt-contrib-uglify'
   grunt.loadNpmTasks 'grunt-contrib-compress'
   grunt.loadNpmTasks 'grunt-contrib-clean'
+  grunt.loadNpmTasks 'grunt-umd'
   grunt.loadNpmTasks 'grunt-express'
-  grunt.loadNpmTasks 'grunt-shell'
+  grunt.loadNpmTasks 'grunt-jekyll'
+  grunt.loadNpmTasks 'grunt-contrib-jasmine'
 
-  grunt.registerTask 'default', ['site', 'express', 'watch']
-  grunt.registerTask 'site', ['sass', 'concat:simditor', 'coffee', 'concat:all', 'copy:site', 'shell']
+  grunt.registerTask 'default', ['site', 'express', 'jasmine:test:build', 'watch']
+  grunt.registerTask 'site', ['sass', 'coffee', 'umd', 'copy:vendor', 'copy:scripts', 'copy:styles', 'jekyll']
+  grunt.registerTask 'test', ['sass', 'coffee', 'umd', 'jasmine']
   grunt.registerTask 'package', ['clean:package', 'copy:package', 'uglify:simditor', 'compress']
-

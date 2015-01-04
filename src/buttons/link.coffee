@@ -5,15 +5,14 @@ class LinkButton extends Button
 
   icon: 'link'
 
-  title: '插入链接'
-
   htmlTag: 'a'
 
   disableTag: 'pre'
 
   render: (args...) ->
     super args...
-    @popover = new LinkPopover(@editor)
+    @popover = new LinkPopover
+      button: @
 
   status: ($node) ->
     @setDisabled $node.is(@disableTag) if $node?
@@ -57,7 +56,7 @@ class LinkButton extends Button
       $link = $('<a/>', {
         href: 'http://www.example.com',
         target: '_blank',
-        text: linkText || '链接文字'
+        text: linkText || @_t('linkText')
       })
 
       if $startBlock[0] == $endBlock[0]
@@ -78,28 +77,26 @@ class LinkButton extends Button
 
     @editor.selection.selectRange range
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
 
 
 class LinkPopover extends Popover
 
-  _tpl: """
-    <div class="link-settings">
-      <div class="settings-field">
-        <label>文本</label>
-        <input class="link-text" type="text"/>
-        <a class="btn-unlink" href="javascript:;" title="取消链接" tabindex="-1"><span class="fa fa-unlink"></span></a>
-      </div>
-      <div class="settings-field">
-        <label>链接</label>
-        <input class="link-url" type="text"/>
-      </div>
-    </div>
-  """
-
   render: ->
+    tpl = """
+      <div class="link-settings">
+        <div class="settings-field">
+          <label>#{ @_t 'text' }</label>
+          <input class="link-text" type="text"/>
+          <a class="btn-unlink" href="javascript:;" title="#{ @_t 'removeLink' }" tabindex="-1"><span class="fa fa-unlink"></span></a>
+        </div>
+        <div class="settings-field">
+          <label>#{ @_t 'linkUrl' }</label>
+          <input class="link-url" type="text"/>
+        </div>
+      </div>
+    """
     @el.addClass('link-popover')
-      .append(@_tpl)
+      .append(tpl)
     @textEl = @el.find '.link-text'
     @urlEl = @el.find '.link-url'
     @unlinkEl = @el.find '.btn-unlink'
@@ -110,7 +107,11 @@ class LinkPopover extends Popover
 
     @urlEl.on 'keyup', (e) =>
       return if e.which == 13
-      @target.attr 'href', @urlEl.val()
+
+      val = @urlEl.val()
+      val = 'http://' + val unless /https?:\/\/|^\//ig.test(val) or !val
+
+      @target.attr 'href', val
 
     $([@urlEl[0], @textEl[0]]).on 'keydown', (e) =>
       if e.which == 13 or e.which == 27 or (!e.shiftKey and e.which == 9 and $(e.target).hasClass('link-url'))
@@ -120,7 +121,6 @@ class LinkPopover extends Popover
           @editor.selection.setRangeAfter @target, range
           @hide()
           @editor.trigger 'valuechanged'
-          @editor.trigger 'selectionchanged'
         , 0
 
     @unlinkEl.on 'click', (e) =>
@@ -131,7 +131,6 @@ class LinkPopover extends Popover
       range = document.createRange()
       @editor.selection.setRangeAfter txtNode, range
       @editor.trigger 'valuechanged'
-      @editor.trigger 'selectionchanged'
 
   show: (args...) ->
     super args...
@@ -140,5 +139,5 @@ class LinkPopover extends Popover
 
 
 
-Simditor.Toolbar.addButton(LinkButton)
+Simditor.Toolbar.addButton LinkButton
 

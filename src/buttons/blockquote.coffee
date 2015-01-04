@@ -5,8 +5,6 @@ class BlockquoteButton extends Button
 
   icon: 'quote-left'
 
-  title: '引用'
-
   htmlTag: 'blockquote'
 
   disableTag: 'pre, table'
@@ -38,7 +36,6 @@ class BlockquoteButton extends Button
     @editor.selection.restore()
 
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
 
   _convertEl: (el) ->
     $el = $(el)
@@ -55,5 +52,5 @@ class BlockquoteButton extends Button
 
 
 
-Simditor.Toolbar.addButton(BlockquoteButton)
+Simditor.Toolbar.addButton BlockquoteButton
 

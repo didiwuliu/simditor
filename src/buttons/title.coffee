@@ -3,36 +3,43 @@ class TitleButton extends Button
 
   name: 'title'
 
-  title: '标题文字'
-
   htmlTag: 'h1, h2, h3, h4'
 
   disableTag: 'pre, table'
 
-  menu: [{
-    name: 'normal',
-    text: '普通文本',
-    param: 'p'
-  }, '|', {
-    name: 'h1',
-    text: '标题 1',
-    param: 'h1'
-  }, {
-    name: 'h2',
-    text: '标题 2',
-    param: 'h2'
-  }, {
-    name: 'h3',
-    text: '标题 3',
-    param: 'h3'
-  }]
+  _init: ->
+    @menu = [{
+      name: 'normal',
+      text: @_t('normalText'),
+      param: 'p'
+    }, '|', {
+      name: 'h1',
+      text: @_t('title') + ' 1',
+      param: 'h1'
+    }, {
+      name: 'h2',
+      text: @_t('title') + ' 2',
+      param: 'h2'
+    }, {
+      name: 'h3',
+      text: @_t('title') + ' 3',
+      param: 'h3'
+    }, {
+      name: 'h4',
+      text: @_t('title') + ' 4',
+      param: 'h4'
+    }, {
+      name: 'h5',
+      text: @_t('title') + ' 5',
+      param: 'h5'
+    }]
+    super()
 
   setActive: (active, param) ->
-    @active = active
-    if active
-      @el.addClass('active active-' + param)
-    else
-      @el.removeClass('active active-p active-h1 active-h2 active-h3')
+    super active
+
+    @el.removeClass 'active-p active-h1 active-h2 active-h3'
+    @el.addClass('active active-' + param) if active
 
   status: ($node) ->
     @setDisabled $node.is(@disableTag) if $node?
@@ -66,7 +73,6 @@ class TitleButton extends Button
     @editor.selection.restore()
 
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
 
   _convertEl: (el, param) ->
     $el = $(el)
@@ -81,5 +87,5 @@ class TitleButton extends Button
     results
 
 
-Simditor.Toolbar.addButton(TitleButton)
+Simditor.Toolbar.addButton TitleButton
 

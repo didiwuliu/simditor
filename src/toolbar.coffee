@@ -1,21 +1,20 @@
 
-class Toolbar extends Plugin
+class Toolbar extends SimpleModule
 
-  @className: 'Toolbar'
+  @pluginName: 'Toolbar'
 
   opts:
     toolbar: true
     toolbarFloat: true
+    toolbarHidden: false
+    toolbarFloatOffset: 0
 
   _tpl:
     wrapper: '<div class="simditor-toolbar"><ul></ul></div>'
     separator: '<li><span class="separator"></span></li>'
 
-  constructor: (args...) ->
-    super args...
-    @editor = @widget
-
   _init: ->
+    @editor = @_module
     return unless @opts.toolbar
 
     unless $.isArray @opts.toolbar
@@ -29,23 +28,39 @@ class Toolbar extends Plugin
     @wrapper.on 'mousedown', (e) =>
       @list.find('.menu-on').removeClass('.menu-on')
 
-    $(document).on 'mousedown.simditor', (e) =>
+    $(document).on 'mousedown.simditor' + @editor.id, (e) =>
       @list.find('.menu-on').removeClass('.menu-on')
 
-    if @opts.toolbarFloat
+    if not @opts.toolbarHidden and @opts.toolbarFloat
       @wrapper.width @wrapper.outerWidth()
-      @wrapper.css 'left', @wrapper.offset().left
+      @wrapper.css 'top', @opts.toolbarFloatOffset
+      toolbarHeight = @wrapper.outerHeight()
+
+      unless @editor.util.os.mobile
+        $(window).on 'resize.simditor-' + @editor.id, (e) =>
+          @wrapper.css 'position', 'static'
+          @editor.util.reflow @wrapper
+          @wrapper.css 'left', @wrapper.offset().left
+          @wrapper.css 'position', ''
+        .resize()
+
       $(window).on 'scroll.simditor-' + @editor.id, (e) =>
         topEdge = @editor.wrapper.offset().top
         bottomEdge = topEdge + @editor.wrapper.outerHeight() - 80
-        scrollTop = $(document).scrollTop()
+        scrollTop = $(document).scrollTop() + @opts.toolbarFloatOffset
 
         if scrollTop <= topEdge or scrollTop >= bottomEdge
           @editor.wrapper.removeClass('toolbar-floating')
+            .css('padding-top', '')
+          if @editor.util.os.mobile
+            @wrapper.css 'top', @opts.toolbarFloatOffset
         else
           @editor.wrapper.addClass('toolbar-floating')
+            .css('padding-top', toolbarHeight)
+          if @editor.util.os.mobile
+            @wrapper.css 'top', scrollTop - topEdge + @opts.toolbarFloatOffset
 
-    @editor.on 'selectionchanged focus', =>
+    @editor.on 'selectionchanged', =>
       @toolbarStatus()
 
     @editor.on 'destroy', =>
@@ -68,7 +83,13 @@ class Toolbar extends Plugin
         throw new Error 'simditor: invalid toolbar button "' + name + '"'
         continue
 
-      @buttons.push new @constructor.buttons[name](@editor)
+      @buttons.push new @constructor.buttons[name]
+        editor: @editor
+
+    if @opts.toolbarHidden
+      @wrapper.hide()
+    else
+      @editor.placeholderEl.css 'top', @wrapper.outerHeight()
 
   toolbarStatus: (name) ->
     return unless @editor.inputManager.focused

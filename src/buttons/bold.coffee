@@ -5,20 +5,18 @@ class BoldButton extends Button
 
   icon: 'bold'
 
-  title: '加粗文字'
-
   htmlTag: 'b, strong'
 
   disableTag: 'pre'
 
-  shortcut: 'cmd+66'
+  shortcut: 'cmd+b'
 
-  render: ->
+  _init: ->
     if @editor.util.os.mac
       @title = @title + ' ( Cmd + b )'
     else
       @title = @title + ' ( Ctrl + b )'
-      @shortcut = 'ctrl+66'
+      @shortcut = 'ctrl+b'
     super()
 
   status: ($node) ->
@@ -32,7 +30,9 @@ class BoldButton extends Button
   command: ->
     document.execCommand 'bold'
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
+
+    # bold command won't trigger selectionchange event automatically
+    $(document).trigger 'selectionchange'
 
 
-Simditor.Toolbar.addButton(BoldButton)
+Simditor.Toolbar.addButton BoldButton

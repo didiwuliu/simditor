@@ -1,7 +1,7 @@
 ---
 layout: doc
 title: 配置 - Simditor
-name: doc-config
+id: doc-config
 root: ../
 ---
 
@@ -10,7 +10,7 @@ root: ../
 Simditor 构造函数创建一个新的编辑器实例。通过传递的 options 参数定制实例。下面的示例使用所有选项及其默认值：
 
 ```coffee
-editor = new Simditor({
+editor = new Simditor
   textarea: null
   placeholder: ''
   defaultImage: 'images/image.png'
@@ -19,8 +19,9 @@ editor = new Simditor({
   tabIndent: true
   toolbar: true
   toolbarFloat: true
+  toolbarFloatOffset: 0
+  toolbarHidden: false
   pasteImage: false
-})
 ```
 
 ###配置选项

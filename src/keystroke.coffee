@@ -1,22 +1,21 @@
 
 # Standardize keystroke actions across browsers
 
-class Keystroke extends Plugin
+class Keystroke extends SimpleModule
 
-  @className: 'Keystroke'
-
-  constructor: (args...) ->
-    super args...
-    @editor = @widget
+  @pluginName: 'Keystroke'
 
   _init: ->
+    @editor = @_module
 
     # safari doesn't support shift + enter default behavior
     if @editor.util.browser.safari
       @editor.inputManager.addKeystrokeHandler '13', '*', (e) =>
         return unless e.shiftKey
-        $br = $('<br/>')
+        $blockEl = @editor.util.closestBlockEl()
+        return if $blockEl.is('pre')
 
+        $br = $('<br/>')
         if @editor.selection.rangeAtEndOf $blockEl
           @editor.selection.insertNode $br
           @editor.selection.insertNode $('<br/>')
@@ -44,11 +43,11 @@ class Keystroke extends Plugin
       @editor.inputManager.addKeystrokeHandler '13', 'h6', titleEnterHandler
 
 
-    # Remove hr and img node
+    # Remove hr
     @editor.inputManager.addKeystrokeHandler '8', '*', (e) =>
       $rootBlock = @editor.util.furthestBlockEl()
       $prevBlockEl = $rootBlock.prev()
-      if $prevBlockEl.is('hr, .simditor-image') and @editor.selection.rangeAtStartOf $rootBlock
+      if $prevBlockEl.is('hr') and @editor.selection.rangeAtStartOf $rootBlock
         # TODO: need to test on IE
         @editor.selection.save()
         $prevBlockEl.remove()
@@ -113,8 +112,14 @@ class Keystroke extends Plugin
 
 
     # press enter in a code block: insert \n instead of br
+    # press shift + enter in code block: insert a paragrash after code block
     @editor.inputManager.addKeystrokeHandler '13', 'pre', (e, $node) =>
       e.preventDefault()
+      if e.shiftKey
+        $p = $('<p/>').append(@editor.util.phBr).insertAfter($node)
+        @editor.selection.setRangeAtStartOf $p
+        return true
+
       range = @editor.selection.getRange()
       breakNode = null
 
@@ -139,7 +144,8 @@ class Keystroke extends Plugin
       $closestBlock = @editor.util.closestBlockEl()
       return unless $closestBlock.is('p') and !$closestBlock.next().length and @editor.util.isEmptyNode $closestBlock
       $node.after $closestBlock
-      @editor.selection.setRangeAtStartOf $closestBlock
+      range = document.createRange()
+      @editor.selection.setRangeAtStartOf $closestBlock, range
       true
 
 
@@ -147,21 +153,28 @@ class Keystroke extends Plugin
     @editor.inputManager.addKeystrokeHandler '8', 'li', (e, $node) =>
       $childList = $node.children('ul, ol')
       $prevNode = $node.prev('li')
-      return unless $childList.length > 0 and $prevNode.length > 0
+      return false unless $childList.length > 0 and $prevNode.length > 0
 
       text = ''
       $textNode = null
       $node.contents().each (i, n) =>
-        if n.nodeType == 3 and n.nodeValue
+        return false if n.nodeType is 1 and /UL|OL/.test(n.nodeName)
+        return if n.nodeType is 1 and /BR/.test(n.nodeName)
+
+        if n.nodeType is 3 and n.nodeValue
           text += n.nodeValue
-          $textNode = $(n)
+        else if n.nodeType is 1
+          text += $(n).text()
+
+        $textNode= $(n)
+
       if $textNode and text.length == 1 and @editor.util.browser.firefox and !$textNode.next('br').length
         $br = $(@editor.util.phBr).insertAfter $textNode
         $textNode.remove()
         @editor.selection.setRangeBefore $br
         return true
       else if text.length > 0
-        return
+        return false
 
       range = document.createRange()
       $prevChildList = $prevNode.children('ul, ol')
@@ -184,7 +197,8 @@ class Keystroke extends Plugin
       codeStr = $node.html().replace('\n', '<br/>')
       $newNode = $('<p/>').append(codeStr || @editor.util.phBr).insertAfter $node
       $node.remove()
-      @editor.selection.setRangeAtStartOf $newNode
+      range = document.createRange()
+      @editor.selection.setRangeAtStartOf $newNode, range
       true
 
 
@@ -192,6 +206,7 @@ class Keystroke extends Plugin
     @editor.inputManager.addKeystrokeHandler '8', 'blockquote', (e, $node) =>
       return unless @editor.selection.rangeAtStartOf $node
       $firstChild = $node.children().first().unwrap()
-      @editor.selection.setRangeAtStartOf $firstChild
+      range = document.createRange()
+      @editor.selection.setRangeAtStartOf $firstChild, range
       true
 

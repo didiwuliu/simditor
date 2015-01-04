@@ -5,20 +5,18 @@ class ItalicButton extends Button
 
   icon: 'italic'
 
-  title: '斜体文字'
-
   htmlTag: 'i'
 
   disableTag: 'pre'
 
-  shortcut: 'cmd+73'
+  shortcut: 'cmd+i'
 
-  render: ->
+  _init: ->
     if @editor.util.os.mac
       @title = @title + ' ( Cmd + i )'
     else
       @title = @title + ' ( Ctrl + i )'
-      @shortcut = 'ctrl+73'
+      @shortcut = 'ctrl+i'
 
     super()
 
@@ -33,8 +31,10 @@ class ItalicButton extends Button
   command: ->
     document.execCommand 'italic'
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
+
+    # italic command won't trigger selectionchange event automatically
+    $(document).trigger 'selectionchange'
 
 
-Simditor.Toolbar.addButton(ItalicButton)
+Simditor.Toolbar.addButton ItalicButton
 

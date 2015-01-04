@@ -1,19 +1,9 @@
 
 class ImageButton extends Button
 
-  _wrapperTpl: """
-    <div class="simditor-image" contenteditable="false" tabindex="-1">
-      <div class="simditor-image-resize-handle right"></div>
-      <div class="simditor-image-resize-handle bottom"></div>
-      <div class="simditor-image-resize-handle right-bottom"></div>
-    </div>
-  """
-
   name: 'image'
 
   icon: 'picture-o'
-
-  title: '插入图片'
 
   htmlTag: 'img'
 
@@ -21,79 +11,69 @@ class ImageButton extends Button
 
   defaultImage: ''
 
-  maxWidth: 0
+  needFocus: false
 
-  maxHeight: 0
-
-  menu: [{
-    name: 'upload-image',
-    text: '本地图片'
-  }, {
-    name: 'external-image',
-    text: '外链图片'
-  }]
-
-  constructor: (@editor) ->
-    @menu = false unless @editor.uploader?
-    super @editor
+  _init: () ->
+    if @editor.uploader?
+      @menu = [{
+        name: 'upload-image',
+        text: @_t 'localImage'
+      }, {
+        name: 'external-image',
+        text: @_t 'externalImage'
+      }]
+    else
+      @menu = false
 
     @defaultImage = @editor.opts.defaultImage
-    @maxWidth = @editor.opts.maxImageWidth || @editor.body.width()
-    @maxHeight = @editor.opts.maxImageHeight || $(window).height()
 
-    @editor.on 'decorate', (e, $el) =>
-      $el.find('img:not([data-non-image])').each (i, img) =>
-        @decorate $(img)
+    @editor.body.on 'click', 'img:not([data-non-image])', (e) =>
+      $img = $(e.currentTarget)
 
-    @editor.on 'undecorate', (e, $el) =>
-      $el.find('img:not([data-non-image])').each (i, img) =>
-        @undecorate $(img)
-
-    @editor.body.on 'mousedown', '.simditor-image', (e) =>
-      $imgWrapper = $(e.currentTarget)
-
-      if $imgWrapper.hasClass 'selected'
-        @popover.srcEl.blur()
-        $imgWrapper.focus()
-      else
-        @editor.body.blur()
-        @editor.body.find('.simditor-image').removeClass('selected')
-        $imgWrapper.addClass('selected')
-          .width($imgWrapper.find('img').width())
-          .focus()
-        @popover.show $imgWrapper
+      #@popover.show $img
+      range = document.createRange()
+      range.selectNode $img[0]
+      @editor.selection.selectRange range
+      @editor.trigger 'selectionchanged' unless @editor.util.supportSelectionChange
 
       false
 
-    @editor.body.on 'click', '.simditor-image', (e) =>
-      false
+    @editor.body.on 'mouseup', 'img:not([data-non-image])', (e) =>
+      return false
+
 
     @editor.on 'selectionchanged.image', =>
       range = @editor.selection.getRange()
       return unless range?
-      $container = $(range.commonAncestorContainer)
 
-      if range.collapsed and $container.is('.simditor-image')
-        $container.mousedown()
-      else if @popover.active
+      $contents = $(range.cloneContents()).contents()
+      if $contents.length == 1 and $contents.is('img:not([data-non-image])')
+        $img = $(range.startContainer).contents().eq(range.startOffset)
+        @popover.show $img
+      else
         @popover.hide()
 
-    @editor.body.on 'keydown', '.simditor-image', (e) =>
-      return unless e.which == 8
-      @popover.hide()
+    @editor.on 'valuechanged.image', =>
+      $masks = @editor.wrapper.find('.simditor-image-loading')
+      return unless $masks.length > 0
+      $masks.each (i, mask) =>
+        $mask = $(mask)
+        $img = $mask.data 'img'
+        unless $img and $img.parent().length > 0
+          $mask.remove()
+          if $img
+            file = $img.data 'file'
+            if file
+              @editor.uploader.cancel file
+              if @editor.body.find('img.uploading').length < 1
+                @editor.uploader.trigger 'uploadready', [file]
 
-      newBlockEl = $('<p/>').append(@editor.util.phBr)
-      $(e.currentTarget).replaceWith newBlockEl
-
-      range = document.createRange()
-      @editor.selection.setRangeAtStartOf newBlockEl, range
-      @editor.trigger 'valuechanged'
-      @editor.trigger 'selectionchanged'
-      return false
+    super()
 
   render: (args...) ->
     super args...
-    @popover = new ImagePopover(@)
+    @popover = new ImagePopover
+      button: @
 
   renderMenu: ->
     super()
@@ -103,27 +83,27 @@ class ImageButton extends Button
 
     createInput = =>
       $input.remove() if $input
-      $input = $('<input type="file" title="上传图片" name="upload_file" accept="image/*">')
+      $input = $('<input type="file" title="' + @_t('uploadImage') + '" accept="image/*">')
         .appendTo($uploadItem)
 
     createInput()
 
-    $uploadItem.on 'click mousedown', 'input[name=upload_file]', (e) =>
+    $uploadItem.on 'click mousedown', 'input[type=file]', (e) =>
       e.stopPropagation()
 
-    $uploadItem.on 'change', 'input[name=upload_file]', (e) =>
+    $uploadItem.on 'change', 'input[type=file]', (e) =>
       if @editor.inputManager.focused
         @editor.uploader.upload($input, {
           inline: true
         })
         createInput()
-      else if @editor.inputManager.lastCaretPosition
+      else
         @editor.one 'focus', (e) =>
           @editor.uploader.upload($input, {
             inline: true
           })
           createInput()
-        @editor.undoManager.caretPosition @editor.inputManager.lastCaretPosition
+        @editor.focus()
       @wrapper.removeClass('menu-on')
 
     @_initUploader()
@@ -136,26 +116,25 @@ class ImageButton extends Button
     @editor.uploader.on 'beforeupload', (e, file) =>
       return unless file.inline
 
-      if file.imgWrapper
-        $img = file.imgWrapper.find("img")
+      if file.img
+        $img = $(file.img)
       else
-        $img = @createImage()
-        $img.mousedown()
-        file.imgWrapper = $img.parent '.simditor-image'
+        $img = @createImage(file.name)
+        #$img.click()
+        file.img = $img
+
+      $img.addClass 'uploading'
+      $img.data 'file', file
 
       @editor.uploader.readImageFile file.obj, (img) =>
-        prepare = () =>
-          @popover.srcEl.val('正在上传...')
-          file.imgWrapper.append '<div class="mask"></div>'
-          $progress = $('<div class="simditor-image-progress"><span></span></div>').appendTo file.imgWrapper
-          $progress.addClass('loading') unless @editor.uploader.html5
+        return unless $img.hasClass('uploading')
+        src = if img then img.src else @defaultImage
 
-        if img
-          @loadImage $img, img.src, () =>
+        @loadImage $img, src, =>
+          if @popover.active
             @popover.refresh()
-            prepare()
-        else
-          prepare()
+            @popover.srcEl.val(@_t('uploading'))
+              .prop('disabled', true)
 
     @editor.uploader.on 'uploadprogress', (e, file, loaded, total) =>
       return unless file.inline
@@ -164,22 +143,41 @@ class ImageButton extends Button
       percent = (percent * 100).toFixed(0)
       percent = 99 if percent > 99
 
-      file.imgWrapper.find(".simditor-image-progress span").text(percent)
-
-      file.imgWrapper.find('.mask').css({
-        top: percent + '%',
-        height: (100 - percent) + '%'
-      })
+      $mask = file.img.data('mask')
+      if $mask
+        $img = $mask.data('img')
+        $txt = $mask.find('span')
+        if $img and $img.parent().length > 0 and percent != $txt.text()
+          $txt.text(percent)
+        else
+          $mask.remove()
 
     @editor.uploader.on 'uploadsuccess', (e, file, result) =>
       return unless file.inline
 
-      $img = file.imgWrapper.find("img")
-      @loadImage $img, result.file_path, () =>
-        file.imgWrapper.find(".mask, .simditor-image-progress").remove()
+      $img = file.img
+      $img.removeData 'file'
+      $img.removeClass 'uploading'
+
+      $mask = $img.data('mask')
+      $mask.remove() if $mask
+      $img.removeData 'mask'
+
+      if result.success == false
+        msg = result.msg || @_t('uploadFailed')
+        alert msg
+        $img.attr 'src', @defaultImage
+      else
+        $img.attr 'src', result.file_path
+
+      if @popover.active
+        @popover.srcEl.prop('disabled', false)
         @popover.srcEl.val result.file_path
-        @editor.trigger 'valuechanged'
+
+      @editor.trigger 'valuechanged'
+      if @editor.body.find('img.uploading').length < 1
         @editor.uploader.trigger 'uploadready', [file, result]
+
 
     @editor.uploader.on 'uploaderror', (e, file, xhr) =>
       return unless file.inline
@@ -190,112 +188,100 @@ class ImageButton extends Button
           result = $.parseJSON xhr.responseText
           msg = result.msg
         catch e
-          msg = '上传出错了'
+          msg = @_t('uploadError')
 
-        if simple? and simple.message?
-          simple.message(msg)
-        else
-          alert(msg)
+        alert msg
 
-      $img = file.imgWrapper.find("img")
-      @loadImage $img, @defaultImage, =>
-        @popover.refresh()
-        @popover.srcEl.val $img.attr('src')
-        file.imgWrapper.find(".mask, .simditor-image-progress").remove()
-        @editor.trigger 'valuechanged'
+      $img = file.img
+      $img.removeData 'file'
+      $img.removeClass 'uploading'
+
+      $mask = $img.data('mask')
+      $mask.remove() if $mask
+      $img.removeData 'mask'
+
+      $img.attr 'src', @defaultImage
+      if @popover.active
+        @popover.srcEl.prop('disabled', false)
+        @popover.srcEl.val @defaultImage
+
+      @editor.trigger 'valuechanged'
+      if @editor.body.find('img.uploading').length < 1
+        @editor.uploader.trigger 'uploadready', [file, result]
+
 
   status: ($node) ->
     @setDisabled $node.is(@disableTag) if $node?
     return true if @disabled
 
-  decorate: ($img) ->
-    $parent = $img.parent()
-    return if $parent.is('.simditor-image')
-
-    $wrapper = $(@_wrapperTpl)
-      .width($img.width())
-
-    if $parent.is('p')
-      $wrapper.prepend($img)
-        .replaceAll($parent)
-    else
-      $wrapper.insertBefore($img)
-        .prepend($img)
-
-  undecorate: ($img) ->
-    $wrapper = $img.parent('.simditor-image')
-    return if $wrapper.length < 1
-
-    unless /^data:image/.test($img.attr('src'))
-      $('<p/>').append($img).insertAfter($wrapper)
-    $wrapper.remove()
-
   loadImage: ($img, src, callback) ->
-    $wrapper = $img.parent('.simditor-image')
+    $mask = $img.data('mask')
+    if !$mask
+      $mask = $('<div class="simditor-image-loading"><span></span></div>')
+        .hide()
+        .appendTo(@editor.wrapper)
+      $mask.addClass('uploading') if $img.hasClass('uploading')
+      $img.data('mask', $mask)
+      $mask.data('img', $img)
+
     img = new Image()
 
     img.onload = =>
+      # in case upload faster than image preview (usually happens in dev)
+      return if $mask.hasClass('uploading') and !$img.hasClass('uploading')
+
       width = img.width
       height = img.height
-      if width > @maxWidth
-        height = @maxWidth * height / width
-        width = @maxWidth
-      if height > @maxHeight
-        width = @maxHeight * width / height
-        height = @maxHeight
 
-      $img.attr({
+      $img.attr
         src: src,
-        width: width,
-        height: height,
-        'data-image-src':  src,
-        'data-image-name': '图片',
-        'data-image-size': img.width + ',' + img.height
-      })
+        'data-image-size': width + ',' + height
 
-      $wrapper.width(width)
-        .height(height)
+      if $img.hasClass 'uploading' # img being uploaded
+        @editor.util.reflow @editor.body
+        wrapperOffset = @editor.wrapper.offset()
+        imgOffset = $img.offset()
+        $mask.css({
+          top: imgOffset.top - wrapperOffset.top,
+          left: imgOffset.left - wrapperOffset.left,
+          width: $img.width(),
+          height: $img.height()
+        }).show()
+      else
+        $mask.remove()
+        $img.removeData('mask')
 
-      callback(true)
+      callback(img)
 
     img.onerror = =>
       callback(false)
+      $mask.remove()
+      $img.removeData('mask')
 
     img.src = src
 
-  createImage: () ->
+  createImage: (name = 'Image') ->
+    @editor.focus() unless @editor.inputManager.focused
     range = @editor.selection.getRange()
-    startNode = range.startContainer
-    endNode = range.endContainer
-    $startBlock = @editor.util.closestBlockEl(startNode)
-    $endBlock = @editor.util.closestBlockEl(endNode)
-
     range.deleteContents()
 
-    if $startBlock[0] == $endBlock[0]
-      if $startBlock.is 'li'
-        $startBlock = @editor.util.furthestNode($startBlock, 'ul, ol')
-        $endBlock = $startBlock
-        range.setEndAfter($startBlock[0])
-        range.collapse(false)
-      else if $startBlock.is 'p'
-        if @editor.util.isEmptyNode $startBlock
-          range.selectNode $startBlock[0]
-          range.deleteContents()
-        else if @editor.selection.rangeAtEndOf $startBlock, range
-          range.setEndAfter($startBlock[0])
-          range.collapse(false)
-        else if @editor.selection.rangeAtStartOf $startBlock, range
-          range.setEndBefore($startBlock[0])
-          range.collapse(false)
-        else
-          $breakedEl = @editor.selection.breakBlockEl($startBlock, range)
-          range.setEndBefore($breakedEl[0])
-          range.collapse(false)
+    $block = @editor.util.closestBlockEl()
+    if $block.is('p') and !@editor.util.isEmptyNode $block
+      $block = $('<p/>').append(@editor.util.phBr).insertAfter($block)
+      @editor.selection.setRangeAtStartOf $block, range
+    #else if $block.is('li')
+      #$block = @editor.util.furthestNode $block, 'ul, ol'
+      #$block = $('<p/>').append(@editor.util.phBr).insertAfter($block)
+      #@editor.selection.setRangeAtStartOf $block, range
 
-    $img = $('<img/>')
+    $img = $('<img/>').attr('alt', name)
     range.insertNode $img[0]
-    @decorate $img
+
+    $nextBlock = $block.next 'p'
+    unless $nextBlock.length > 0
+      $nextBlock = $('<p/>').append(@editor.util.phBr).insertAfter($block)
+    @editor.selection.setRangeAtStartOf $nextBlock
+
     $img
 
   command: (src) ->
@@ -303,7 +289,8 @@ class ImageButton extends Button
 
     @loadImage $img, src or @defaultImage, =>
       @editor.trigger 'valuechanged'
-      $img.mousedown()
+      @editor.util.reflow $img
+      $img.click()
 
       @popover.one 'popovershow', =>
         @popover.srcEl.focus()
@@ -312,51 +299,96 @@ class ImageButton extends Button
 
 class ImagePopover extends Popover
 
-  _tpl: """
-    <div class="link-settings">
-      <div class="settings-field">
-        <label>图片地址</label>
-        <input class="image-src" type="text"/>
-        <a class="btn-upload" href="javascript:;" title="上传图片" tabindex="-1">
-          <span class="fa fa-upload"></span>
-        </a>
-      </div>
-    </div>
-  """
-
   offset:
     top: 6
     left: -4
 
-  constructor: (@button) ->
-    super @button.editor
-
   render: ->
+    tpl = """
+      <div class="link-settings">
+        <div class="settings-field">
+          <label>#{ @_t 'imageUrl' }</label>
+          <input class="image-src" type="text" tabindex="1" />
+          <a class="btn-upload" href="javascript:;" title="#{ @_t 'uploadImage' }" tabindex="-1">
+            <span class="fa fa-upload"></span>
+          </a>
+        </div>
+        <div class="settings-field">
+          <label>#{ @_t 'imageSize' }</label>
+          <input class="image-size" id="image-width" type="text" tabindex="2" />
+          <span class="times">×</span>
+          <input class="image-size" id="image-height" type="text" tabindex="3" />
+          <a class="btn-restore" href="javascript:;" title="#{ @_t 'restoreImageSize' }" tabindex="-1">
+            <span class="fa fa-reply"></span>
+          </a>
+        </div>
+      </div>
+    """
     @el.addClass('image-popover')
-      .append(@_tpl)
+      .append(tpl)
     @srcEl = @el.find '.image-src'
 
-    @srcEl.on 'keyup', (e) =>
-      return if e.which == 13
-      clearTimeout @timer if @timer
-
-      @timer = setTimeout =>
-        src = @srcEl.val()
-        $img = @target.find('img')
-        @button.loadImage $img, src, (success) =>
-          return unless success
-          @refresh()
-          @editor.trigger 'valuechanged'
-
-        @timer = null
-      , 200
-
     @srcEl.on 'keydown', (e) =>
-      if e.which == 13 or e.which == 27 or e.which == 9
-        e.preventDefault()
-        @srcEl.blur()
-        @target.removeClass('selected')
+      return unless e.which == 13 or e.which == 27
+      e.preventDefault()
+
+      hideAndFocus = =>
+        @button.editor.body.focus()
+        @button.editor.selection.setRangeAfter @target
         @hide()
+
+      if e.which == 13 and !@target.hasClass('uploading')
+        src = @srcEl.val()
+
+        if /^data:image/.test(src) and not @editor.uploader
+          hideAndFocus()
+          return
+
+        @button.loadImage @target, src, (success) =>
+          return unless success
+
+          if /^data:image/.test(src)
+            blob = @editor.util.dataURLtoBlob src
+            blob.name = "Base64 Image.png"
+            @editor.uploader.upload blob,
+              inline: true
+              img: @target
+          else
+            hideAndFocus()
+            @editor.trigger 'valuechanged'
+      else
+        hideAndFocus()
+
+    @widthEl = @el.find '#image-width'
+    @heightEl = @el.find '#image-height'
+
+    @el.find('.image-size').on 'blur', (e) =>
+      @_resizeImg $(e.currentTarget)
+      @el.data('popover').refresh()
+
+    @el.find('.image-size').on 'keyup', (e) =>
+      inputEl = $(e.currentTarget)
+      unless e.which == 13 or e.which == 27 or e.which == 9
+        @_resizeImg inputEl, true
+
+    @el.find('.image-size').on 'keydown', (e) =>
+      inputEl = $(e.currentTarget)
+      if e.which == 13 or e.which == 27
+        e.preventDefault()
+        if e.which == 13
+          @_resizeImg inputEl
+        else
+          @_restoreImg()
+
+        @button.editor.body.focus()
+        @button.editor.selection.setRangeAfter @target
+        @hide()
+      else if e.which == 9
+        @el.data('popover').refresh()
+
+    @el.find('.btn-restore').on 'click', (e) =>
+      @_restoreImg()
+      @el.data('popover').refresh()
 
     @editor.on 'valuechanged', (e) =>
       @refresh() if @active
@@ -371,25 +403,59 @@ class ImagePopover extends Popover
 
     createInput = =>
       @input.remove() if @input
-      @input = $('<input type="file" title="上传图片" name="upload_file" accept="image/*">')
+      @input = $('<input type="file" title="' + @_t('uploadImage') + '" accept="image/*">')
         .appendTo($uploadBtn)
 
     createInput()
 
-    @el.on 'click mousedown', 'input[name=upload_file]', (e) =>
+    @el.on 'click mousedown', 'input[type=file]', (e) =>
       e.stopPropagation()
 
-    @el.on 'change', 'input[name=upload_file]', (e) =>
+    @el.on 'change', 'input[type=file]', (e) =>
       @editor.uploader.upload(@input, {
         inline: true,
-        imgWrapper: @target
+        img: @target
       })
       createInput()
 
+  _resizeImg: (inputEl, onlySetVal = false) ->
+    value = inputEl.val() * 1
+    return unless $.isNumeric(value) or value < 0
+
+    if inputEl.is @widthEl
+      height = @height * value / @width
+      @heightEl.val height
+    else
+      width = @width * value / @height
+      @widthEl.val width
+
+    unless onlySetVal
+      @target.attr
+        width: width || value
+        height: height || value
+
+  _restoreImg: ->
+    size = @target.data('image-size')?.split(",") || [@width, @height]
+    @target.attr
+      width: size[0] * 1
+      height: size[1] * 1
+    @widthEl.val(size[0])
+    @heightEl.val(size[1])
+
   show: (args...) ->
     super args...
-    $img = @target.find('img')
-    @srcEl.val $img.attr('src')
+    $img = @target
+    @width = $img.width()
+    @height = $img.height()
+
+    if $img.hasClass 'uploading'
+      @srcEl.val @_t('uploading')
+        .prop 'disabled', true
+    else
+      @srcEl.val $img.attr('src')
+        .prop 'disabled', false
+      @widthEl.val @width
+      @heightEl.val @height
 
 
-Simditor.Toolbar.addButton(ImageButton)
+Simditor.Toolbar.addButton ImageButton

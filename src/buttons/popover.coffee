@@ -1,5 +1,5 @@
 
-class Popover extends Module
+class Popover extends SimpleModule
 
   offset:
     top: 4
@@ -9,14 +9,19 @@ class Popover extends Module
 
   active: false
 
-  constructor: (@editor) ->
+  constructor: (opts) ->
+    @button = opts.button
+    @editor = opts.button.editor
+    super opts
+
+  _init: ->
     @el = $('<div class="simditor-popover"></div>')
-      .appendTo(@editor.wrapper)
+      .appendTo(@editor.el)
       .data('popover', @)
     @render()
 
-    @editor.on 'blur.linkpopover', =>
-      @target.addClass('selected') if @active and @target?
+    #@editor.on 'blur.popover', =>
+      #@target.addClass('selected') if @active and @target?
 
     @el.on 'mouseenter', (e) =>
       @el.addClass 'hover'
@@ -27,11 +32,9 @@ class Popover extends Module
 
   show: ($target, position = 'bottom') ->
     return unless $target?
-    @target = $target
+    @editor.hidePopover()
 
-    @el.siblings('.simditor-popover').each (i, el) =>
-      popover = $(el).data('popover')
-      popover.hide()
+    @target = $target.addClass('selected')
 
     if @active
       @refresh(position)
@@ -57,16 +60,17 @@ class Popover extends Module
     @trigger 'popoverhide'
 
   refresh: (position = 'bottom') ->
-    wrapperOffset = @editor.wrapper.offset()
+    return unless @active
+    editorOffset = @editor.el.offset()
     targetOffset = @target.offset()
     targetH = @target.outerHeight()
 
     if position is 'bottom'
-      top = targetOffset.top - wrapperOffset.top + targetH
+      top = targetOffset.top - editorOffset.top + targetH
     else if position is 'top'
-      top = targetOffset.top - wrapperOffset.top - @el.height()
+      top = targetOffset.top - editorOffset.top - @el.height()
 
-    left = Math.min(targetOffset.left - wrapperOffset.left, @editor.wrapper.width() - @el.outerWidth() - 10)
+    left = Math.min(targetOffset.left - editorOffset.left, @editor.wrapper.width() - @el.outerWidth() - 10)
 
     @el.css({
       top: top + @offset.top,
@@ -80,4 +84,4 @@ class Popover extends Module
     @el.remove()
 
 
-window.SimditorPopover = Popover
+Simditor.Popover = Popover

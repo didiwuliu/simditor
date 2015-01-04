@@ -1,5 +1,5 @@
 
-class Button extends Module
+class Button extends SimpleModule
 
   _tpl:
     item: '<li><a tabindex="-1" unselectable="on" class="toolbar-item" href="javascript:;"><span></span></a></li>'
@@ -29,11 +29,18 @@ class Button extends Module
 
   shortcut: null
 
-  constructor: (@editor) ->
+  constructor: (opts) ->
+    @editor = opts.editor
+    @title = @_t(@name)
+    super opts
+
+  _init: ->
     @render()
 
     @el.on 'mousedown', (e) =>
       e.preventDefault()
+      return false if @el.hasClass('disabled') or (@needFocus and !@editor.inputManager.focused)
+
       if @menu
         @wrapper.toggleClass('menu-on')
           .siblings('li')
@@ -48,9 +55,9 @@ class Button extends Module
               'left': 'auto'
               'right': 0
 
-        return false
+          @trigger 'menuexpand'
 
-      return false if @el.hasClass('disabled') or (@needFocus and !@editor.inputManager.focused)
+        return false
 
       param = @el.data('param')
       @command(param)
@@ -123,12 +130,16 @@ class Button extends Module
         .text(menuItem.text)
 
   setActive: (active) ->
+    return if active == @active
     @active = active
     @el.toggleClass('active', @active)
+    @editor.toolbar.trigger 'buttonstatus', [@]
 
   setDisabled: (disabled) ->
+    return if disabled == @disabled
     @disabled = disabled
     @el.toggleClass('disabled', @disabled)
+    @editor.toolbar.trigger 'buttonstatus', [@]
 
   status: ($node) ->
     @setDisabled $node.is(@disableTag) if $node?
@@ -139,5 +150,10 @@ class Button extends Module
 
   command: (param) ->
 
+  _t: (args...) ->
+    result = super args...
+    result = @editor._t args... unless result
+    result
 
-window.SimditorButton = Button
+
+Simditor.Button = Button

@@ -10,24 +10,47 @@
 .simditor .simditor-wrapper .simditor-placeholder {
   display: none;
   position: absolute;
-  top: 40px;
   left: 0;
   z-index: 0;
   padding: 22px 15px;
   font-size: 16px;
-  font-family: helvetica,Arial;
+  font-family: arial, sans-serif;
   line-height: 1.5;
   color: #999999;
   background: transparent;
-}
-.simditor .simditor-wrapper.toolbar-floating {
-  padding-top: 40px;
 }
 .simditor .simditor-wrapper.toolbar-floating .simditor-toolbar {
   position: fixed;
   top: 0;
   z-index: 10;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+}
+.simditor .simditor-wrapper .simditor-image-loading {
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+}
+.simditor .simditor-wrapper .simditor-image-loading span {
+  width: 30px;
+  height: 30px;
+  background: #ffffff url(../images/loading-upload.gif) no-repeat center center;
+  border-radius: 30px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -15px 0 0 -15px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+.simditor .simditor-wrapper .simditor-image-loading.uploading span {
+  background: #ffffff;
+  color: #333333;
+  font-size: 14px;
+  line-height: 30px;
+  text-align: center;
 }
 .simditor .simditor-body {
   padding: 22px 15px 40px;
@@ -44,50 +67,6 @@
 .simditor .simditor-body a.simditor-mention {
   cursor: pointer;
 }
-.simditor .simditor-body .simditor-image {
-  margin: 15px 0;
-  cursor: pointer;
-  outline: none;
-  position: relative;
-}
-.simditor .simditor-body .simditor-image.selected {
-  background: none;
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.2);
-}
-.simditor .simditor-body .simditor-image img {
-  margin: 0;
-}
-.simditor .simditor-body .simditor-image .mask {
-  position: absolute;
-  background: rgba(0, 0, 0, 0.4);
-  width: 100%;
-  height: 100%;
-  top: 0;
-}
-.simditor .simditor-body .simditor-image .simditor-image-progress {
-  width: 30px;
-  height: 30px;
-  background: #ffffff;
-  border-radius: 30px;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  margin: -15px 0 0 -15px;
-  color: #333333;
-  font-size: 14px;
-  line-height: 30px;
-  text-align: center;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
-}
-.simditor .simditor-body .simditor-image .simditor-image-progress.loading {
-  background: white url(../images/loading-upload.gif) no-repeat center center;
-}
-.simditor .simditor-body .simditor-image .simditor-image-progress.loading span {
-  display: none;
-}
-.simditor .simditor-body .simditor-image .simditor-image-resize-handle {
-  display: none;
-}
 .simditor .simditor-body .simditor-table {
   position: relative;
 }
@@ -103,14 +82,24 @@
   cursor: col-resize;
 }
 .simditor .simditor-body pre {
-  min-height: 28px;
+  /*min-height: 28px;*/
   box-sizing: border-box;
   -moz-box-sizing: border-box;
 }
-.simditor .simditor-paste-area {
+.simditor .simditor-body img {
+  cursor: pointer;
+}
+.simditor .simditor-body img.selected {
+  box-shadow: 0 0 0 4px #cccccc;
+}
+.simditor .simditor-paste-area,
+.simditor .simditor-clean-paste-area {
   background: transparent;
   border: none;
   outline: none;
+  resize: none;
+  padding: 0;
+  margin: 0;
 }
 .simditor .simditor-toolbar {
   border-bottom: 1px solid #eeeeee;
@@ -118,10 +107,14 @@
   width: 100%;
 }
 .simditor .simditor-toolbar > ul {
-  height: 40px;
   margin: 0;
   padding: 0 0 0 6px;
   list-style: none;
+}
+.simditor .simditor-toolbar > ul:after {
+  content: "";
+  display: table;
+  clear: both;
 }
 .simditor .simditor-toolbar > ul > li {
   position: relative;
@@ -141,7 +134,6 @@
   width: 50px;
   height: 40px;
   outline: none;
-  overflow: hidden;
   color: #333333;
   font-size: 15px;
   line-height: 40px;
@@ -150,6 +142,10 @@
 }
 .simditor .simditor-toolbar > ul > li > .toolbar-item span {
   opacity: 0.6;
+}
+.simditor .simditor-toolbar > ul > li > .toolbar-item span.fa {
+  display: inline;
+  line-height: normal;
 }
 .simditor .simditor-toolbar > ul > li > .toolbar-item:hover span {
   opacity: 1;
@@ -184,11 +180,42 @@
   content: 'H3';
   font-size: 18px;
 }
+.simditor .simditor-toolbar > ul > li > .toolbar-item.toolbar-item-color {
+  font-size: 14px;
+  position: relative;
+}
+.simditor .simditor-toolbar > ul > li > .toolbar-item.toolbar-item-color span:before {
+  position: relative;
+  top: -2px;
+}
+.simditor .simditor-toolbar > ul > li > .toolbar-item.toolbar-item-color:after {
+  content: '';
+  display: block;
+  width: 14px;
+  height: 4px;
+  background: #cccccc;
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  margin: 0 0 0 -7px;
+}
+.simditor .simditor-toolbar > ul > li > .toolbar-item.toolbar-item-color:hover:after {
+  background: #999999;
+}
+.simditor .simditor-toolbar > ul > li > .toolbar-item.toolbar-item-color.disabled:after {
+  background: #dfdfdf;
+}
 .simditor .simditor-toolbar > ul > li.menu-on .toolbar-item {
   position: relative;
   z-index: 21;
   background: #ffffff;
   box-shadow: 0 -3px 3px rgba(0, 0, 0, 0.2);
+}
+.simditor .simditor-toolbar > ul > li.menu-on .toolbar-item span {
+  opacity: 1;
+}
+.simditor .simditor-toolbar > ul > li.menu-on .toolbar-item.toolbar-item-color:after {
+  background: #999999;
 }
 .simditor .simditor-toolbar > ul > li.menu-on .toolbar-menu {
   display: block;
@@ -196,7 +223,7 @@
 .simditor .simditor-toolbar .toolbar-menu {
   display: none;
   position: absolute;
-  top: 39px;
+  top: 40px;
   left: 0;
   z-index: 20;
   background: #ffffff;
@@ -232,6 +259,14 @@
   font-size: 20px;
   color: #333333;
 }
+.simditor .simditor-toolbar .toolbar-menu ul > li .menu-item.menu-item-h4 {
+  font-size: 18px;
+  color: #333333;
+}
+.simditor .simditor-toolbar .toolbar-menu ul > li .menu-item.menu-item-h5 {
+  font-size: 16px;
+  color: #333333;
+}
 .simditor .simditor-toolbar .toolbar-menu ul > li .separator {
   display: block;
   border-top: 1px solid #cccccc;
@@ -239,6 +274,53 @@
   line-height: 0;
   font-size: 0;
   margin: 6px 0;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color {
+  width: 96px;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color .color-list {
+  height: 40px;
+  margin: 10px 6px 6px 10px;
+  padding: 0;
+  min-width: 0;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color .color-list li {
+  float: left;
+  margin: 0 4px 4px 0;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color .color-list li .font-color {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background: #dfdfdf;
+  border-radius: 2px;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color .color-list li .font-color:hover {
+  opacity: 0.8;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color .color-list li .font-color.font-color-default {
+  background: #333333;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color .color-list li .font-color-1 {
+  background: #E33737;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color .color-list li .font-color-2 {
+  background: #e28b41;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color .color-list li .font-color-3 {
+  background: #c8a732;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color .color-list li .font-color-4 {
+  background: #209361;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color .color-list li .font-color-5 {
+  background: #418caf;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color .color-list li .font-color-6 {
+  background: #aa8773;
+}
+.simditor .simditor-toolbar .toolbar-menu.toolbar-menu-color .color-list li .font-color-7 {
+  background: #999999;
 }
 .simditor .simditor-toolbar .toolbar-menu.toolbar-menu-table .menu-create-table {
   background: #ffffff;
@@ -291,24 +373,39 @@
 .simditor .simditor-popover .settings-field {
   margin: 0 0 5px 0;
   font-size: 12px;
+  height: 25px;
+  line-height: 25px;
 }
 .simditor .simditor-popover .settings-field label {
-  margin: 0 2px 0 0;
+  margin: 0 8px 0 0;
+  float: left;
 }
 .simditor .simditor-popover .settings-field input[type=text] {
+  float: left;
   width: 200px;
   box-sizing: border-box;
   font-size: 12px;
 }
-.simditor .simditor-popover.link-popover .btn-unlink, .simditor .simditor-popover.image-popover .btn-upload {
-  margin: 0 0 0 5px;
+.simditor .simditor-popover .settings-field input[type=text].image-size {
+  width: 87px;
+}
+.simditor .simditor-popover .settings-field .times {
+  float: left;
+  width: 26px;
+  font-size: 12px;
+  text-align: center;
+}
+.simditor .simditor-popover.link-popover .btn-unlink, .simditor .simditor-popover.image-popover .btn-upload, .simditor .simditor-popover.image-popover .btn-restore {
+  float: left;
+  margin: 0 0 0 8px;
   color: #333333;
   font-size: 14px;
+  outline: 0;
 }
-.simditor .simditor-popover.link-popover .btn-unlink span, .simditor .simditor-popover.image-popover .btn-upload span {
+.simditor .simditor-popover.link-popover .btn-unlink span, .simditor .simditor-popover.image-popover .btn-upload span, .simditor .simditor-popover.image-popover .btn-restore span {
   opacity: 0.6;
 }
-.simditor .simditor-popover.link-popover .btn-unlink:hover span, .simditor .simditor-popover.image-popover .btn-upload:hover span {
+.simditor .simditor-popover.link-popover .btn-unlink:hover span, .simditor .simditor-popover.image-popover .btn-upload:hover span, .simditor .simditor-popover.image-popover .btn-restore:hover span {
   opacity: 1;
 }
 .simditor .simditor-popover.image-popover .btn-upload {
@@ -324,10 +421,19 @@
   height: 100%;
   width: 28px;
 }
+.simditor.simditor-mobile .simditor-toolbar > ul > li > .toolbar-item {
+  width: 46px;
+}
+.simditor.simditor-mobile .simditor-wrapper.toolbar-floating .simditor-toolbar {
+  position: absolute;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+}
 
 .simditor .simditor-body, .editor-style {
   font-size: 16px;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: arial, sans-serif;
   line-height: 1.6;
   color: #333;
   outline: none;
@@ -354,7 +460,7 @@
   outline: 0;
 }
 .simditor .simditor-body h1, .simditor .simditor-body h2, .simditor .simditor-body h3, .simditor .simditor-body h4, .simditor .simditor-body h5, .simditor .simditor-body h6, .editor-style h1, .editor-style h2, .editor-style h3, .editor-style h4, .editor-style h5, .editor-style h6 {
-  font-weight: bold;
+  font-weight: normal;
   margin: 40px 0 20px;
   color: #000000;
 }
@@ -429,9 +535,9 @@
   border-radius: 3px;
   font-size: 13px;
   font-family: 'monaco', 'Consolas', "Liberation Mono", Courier, monospace;
-  overflow-x: auto;
+  /*overflow-x: auto;*/
   white-space: pre;
-  word-wrap: normal;
+  word-wrap: break-word;
 }
 .simditor .simditor-body code, .editor-style code {
   display: inline-block;
@@ -472,12 +578,8 @@
   background-color: #ffffee;
 }
 .simditor .simditor-body img, .editor-style img {
-  max-width: 800px;
-  margin: 20px 0;
-  display: block;
-  -ms-interpolation-mode: bicubic;
-  vertical-align: bottom;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+  margin: 0 5px;
+  vertical-align: middle;
 }
 .simditor .simditor-body *[data-indent="0"], .editor-style *[data-indent="0"] {
   margin-left: 0px;

@@ -5,15 +5,12 @@ class CodeButton extends Button
 
   icon: 'code'
 
-  title: '插入代码'
-
   htmlTag: 'pre'
 
   disableTag: 'li, table'
 
-
-  constructor: (@editor) ->
-    super @editor
+  _init: ->
+    super()
 
     @editor.on 'decorate', (e, $el) =>
       $el.find('pre').each (i, pre) =>
@@ -25,7 +22,8 @@ class CodeButton extends Button
 
   render: (args...) ->
     super args...
-    @popover = new CodePopover(@editor)
+    @popover = new CodePopover
+      button: @
 
   status: ($node) ->
     result = super $node
@@ -72,7 +70,6 @@ class CodeButton extends Button
     @editor.selection.setRangeAtEndOf results[0]
 
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
 
   _convertEl: (el) ->
     $el = $(el)
@@ -99,8 +96,14 @@ class CodePopover extends Popover
       <div class="settings-field">
         <select class="select-lang">
           <option value="-1">选择程序语言</option>
+          <option value="bash">Bash</option>
           <option value="c++">C++</option>
+          <option value="cs">C#</option>
           <option value="css">CSS</option>
+          <option value="erlang">Erlang</option>
+          <option value="less">Less</option>
+          <option value="scss">Sass</option>
+          <option value="diff">Diff</option>
           <option value="coffeeScript">CoffeeScript</option>
           <option value="html">Html,XML</option>
           <option value="json">JSON</option>
@@ -130,7 +133,7 @@ class CodePopover extends Popover
         .removeAttr('data-lang')
 
       if @lang isnt -1
-        @target.addClass('lang-' + @lang) 
+        @target.addClass('lang-' + @lang)
         @target.attr('data-lang', @lang)
 
       @target.addClass('selected') if selected
@@ -138,9 +141,9 @@ class CodePopover extends Popover
   show: (args...) ->
     super args...
     @lang = @target.attr('data-lang')
-    @selectEl.val(@lang) if @lang?
+    if @lang? then @selectEl.val(@lang) else @selectEl.val(-1)
 
 
-Simditor.Toolbar.addButton(CodeButton)
+Simditor.Toolbar.addButton CodeButton
 
 

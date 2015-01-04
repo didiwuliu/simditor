@@ -5,7 +5,9 @@ class OutdentButton extends Button
 
   icon: 'outdent'
 
-  title: '向左缩进（Shift + Tab）'
+  _init: ->
+    @title = @_t(@name) + ' (Shift + Tab)'
+    super()
 
   status: ($node) ->
     true
@@ -14,6 +16,6 @@ class OutdentButton extends Button
     @editor.util.outdent()
 
 
-Simditor.Toolbar.addButton(OutdentButton)
+Simditor.Toolbar.addButton OutdentButton
 
 

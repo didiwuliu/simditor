@@ -5,8 +5,6 @@ class StrikethroughButton extends Button
 
   icon: 'strikethrough'
 
-  title: '删除线文字'
-
   htmlTag: 'strike'
 
   disableTag: 'pre'
@@ -22,7 +20,9 @@ class StrikethroughButton extends Button
   command: ->
     document.execCommand 'strikethrough'
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
+
+    # strikethrough command won't trigger selectionchange event automatically
+    $(document).trigger 'selectionchange'
 
 
-Simditor.Toolbar.addButton(StrikethroughButton)
+Simditor.Toolbar.addButton StrikethroughButton

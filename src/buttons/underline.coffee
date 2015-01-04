@@ -5,20 +5,18 @@ class UnderlineButton extends Button
 
   icon: 'underline'
 
-  title: '下划线文字'
-
   htmlTag: 'u'
 
   disableTag: 'pre'
 
-  shortcut: 'cmd+85'
+  shortcut: 'cmd+u'
 
   render: ->
     if @editor.util.os.mac
       @title = @title + ' ( Cmd + u )'
     else
       @title = @title + ' ( Ctrl + u )'
-      @shortcut = 'ctrl+85'
+      @shortcut = 'ctrl+u'
     super()
 
   status: ($node) ->
@@ -32,9 +30,11 @@ class UnderlineButton extends Button
   command: ->
     document.execCommand 'underline'
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
+
+    # underline command won't trigger selectionchange event automatically
+    $(document).trigger 'selectionchange'
 
 
-Simditor.Toolbar.addButton(UnderlineButton)
+Simditor.Toolbar.addButton UnderlineButton
 
 

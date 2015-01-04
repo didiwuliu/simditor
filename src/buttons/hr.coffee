@@ -5,8 +5,6 @@ class HrButton extends Button
 
   icon: 'minus'
 
-  title: '分隔线'
-
   htmlTag: 'hr'
 
   status: ($node) ->
@@ -30,8 +28,7 @@ class HrButton extends Button
       @editor.selection.restore()
 
     @editor.trigger 'valuechanged'
-    @editor.trigger 'selectionchanged'
 
 
-Simditor.Toolbar.addButton(HrButton)
+Simditor.Toolbar.addButton HrButton
 

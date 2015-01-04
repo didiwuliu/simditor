@@ -1,22 +1,11 @@
 
-class Selection extends Plugin
+class Selection extends SimpleModule
 
-  @className: 'Selection'
-
-  constructor: (args...) ->
-    super args...
-    @sel = document.getSelection()
-    @editor = @widget
+  @pluginName: 'Selection'
 
   _init: ->
-
-    #@editor.on 'selectionchanged focus', (e) =>
-      #range = @editor.selection.getRange()
-      #return unless range?
-      #$container = $(range.commonAncestorContainer)
-
-      #if range.collapsed and $container.is('.simditor-body') and @editor.util.isBlockNode($container.children())
-        #@editor.blur()
+    @editor = @_module
+    @sel = document.getSelection()
 
   clear: ->
     try
@@ -43,7 +32,7 @@ class Selection extends Plugin
     endNode = range.endContainer
     endNodeLength = @editor.util.getNodeLength endNode
     #node.normalize()
-    
+
     if !(range.endOffset == endNodeLength - 1 and $(endNode).contents().last().is('br')) and range.endOffset != endNodeLength
       return false
 
@@ -131,7 +120,15 @@ class Selection extends Plugin
         range.setEnd(node, 0)
     else
       nodeLength = @editor.util.getNodeLength node
-      nodeLength -= 1 if node.nodeType != 3 and nodeLength > 0 and $(node).contents().last().is('br')
+      if node.nodeType != 3 and nodeLength > 0
+        $lastNode = $(node).contents().last()
+        if $lastNode.is('br')
+          nodeLength -= 1
+        else if $lastNode[0].nodeType != 3 and @editor.util.isEmptyNode($lastNode)
+          $lastNode.append @editor.util.phBr
+          node = $lastNode[0]
+          nodeLength = 0
+
       range.setEnd(node, nodeLength)
 
     range.collapse(false)
@@ -141,7 +138,7 @@ class Selection extends Plugin
     startRange = range.cloneRange()
     endRange = range.cloneRange()
     startRange.collapse(true)
-    endRange.collapse()
+    endRange.collapse(false)
 
     # the default behavior of cmd+a is buggy
     if !range.collapsed and @rangeAtStartOf(@editor.body, startRange) and @rangeAtEndOf(@editor.body, endRange)
@@ -164,12 +161,14 @@ class Selection extends Plugin
   save: (range = @getRange()) ->
     return if @_selectionSaved
 
+    endRange = range.cloneRange()
+    endRange.collapse(false)
+
     startCaret = $('<span/>').addClass('simditor-caret-start')
     endCaret = $('<span/>').addClass('simditor-caret-end')
 
+    endRange.insertNode(endCaret[0])
     range.insertNode(startCaret[0])
-    range.collapse(false)
-    range.insertNode(endCaret[0])
 
     @clear()
     @_selectionSaved = true

@@ -23,6 +23,7 @@
       'italic'         # 斜体文字
       'underline'      # 下划线文字
       'strikethrough'  # 删除线文字
+      'color'          # 修改文字颜色
       'ol'             # 有序列表
       'ul'             # 无序列表
       'blockquote'     # 引用
@@ -41,6 +42,18 @@
   default: "true"
   description: |
     是否让工具栏按钮在页面滚动的过程中始终可见。
+
+- name: "toolbarFloatOffset"
+  type: "Number"
+  default: 0
+  description: |
+    自定义工具栏浮动的位置。
+
+- name: "toolbarHidden"
+  type: "Boolean"
+  default: "false"
+  description: |
+    是否隐藏工具栏，隐藏后 `toolbarFloat` 会失效。
 
 - name: "defaultImage"
   type: "String"
@@ -72,26 +85,29 @@
 
     * `url` 文件上传的接口地址；
     * `params` 键值对，指定文件上传接口的额外参数，上传的时候随文件一起提交；
+    * `fileKey` 服务器端获取文件数据的参数名；
     * `connectionCount` 同时上传文件的最大数量；
     * `leaveConfirm` 在文件上传过程中离开页面时提醒的文案。
 
     键值对参数的默认值：
 
     ```coffee
-    editor = new Simditor({
+    editor = new Simditor
       textarea: $('#editor')
       upload:
         url: ''
         params: null
+        fileKey: 'upload_file'
         connectionCount: 3
         leaveConfirm: '正在上传文件，如果离开上传会自动取消'
-    })
     ```
 
     图片上传成功后，服务端需要返回json格式的图片地址：
 
-    ```json
+    ```coffee
     {
+      "success": true/false,
+      "msg": "上传失败信息", # 可选
       "file_path": "[real file path]"
     }
     ```

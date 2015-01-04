@@ -1,27 +1,25 @@
 
-class Formatter extends Plugin
+class Formatter extends SimpleModule
 
-  @className: 'Formatter'
-
-  constructor: (args...) ->
-    super args...
-    @editor = @widget
+  @pluginName: 'Formatter'
 
   _init: ->
+    @editor = @_module
+
+    @_allowedTags = ['br', 'a', 'img', 'b', 'strong', 'i', 'u', 'font', 'p', 'ul', 'ol', 'li', 'blockquote', 'pre', 'h1', 'h2', 'h3', 'h4', 'hr']
+    @_allowedAttributes =
+      img: ['src', 'alt', 'width', 'height', 'data-image-src', 'data-image-size', 'data-image-name', 'data-non-image']
+      a: ['href', 'target']
+      font: ['color']
+      pre: ['data-lang', 'class']
+      p: ['data-indent']
+      h1: ['data-indent']
+      h2: ['data-indent']
+      h3: ['data-indent']
+      h4: ['data-indent']
+
     @editor.body.on 'click', 'a', (e) =>
       false
-
-  _allowedTags: ['br', 'a', 'img', 'b', 'strong', 'i', 'u', 'p', 'ul', 'ol', 'li', 'blockquote', 'pre', 'h1', 'h2', 'h3', 'h4', 'hr']
-
-  _allowedAttributes:
-    img: ['src', 'alt', 'width', 'height', 'data-image-src', 'data-image-size', 'data-image-name', 'data-non-image']
-    a: ['href', 'target']
-    pre: ['data-lang', 'class']
-    p: ['data-indent']
-    h1: ['data-indent']
-    h2: ['data-indent']
-    h3: ['data-indent']
-    h4: ['data-indent']
 
   decorate: ($el = @editor.body) ->
     @editor.trigger 'decorate', [$el]
@@ -36,7 +34,7 @@ class Formatter extends Plugin
     findLinkNode = ($parentNode) ->
       $parentNode.contents().each (i, node) ->
         $node = $(node)
-        if $node.is('a') or $node.closest('a', $el).length
+        if $node.is('a') or $node.closest('a, pre', $el).length
           return
 
         if $node.contents().length
@@ -46,7 +44,7 @@ class Formatter extends Plugin
 
     findLinkNode $el
 
-    re = /(https?:\/\/|www\.)[\w\-\.\?&=\/#%:\!]+/ig
+    re = /(https?:\/\/|www\.)[\w\-\.\?&=\/#%:,@\!\+]+/ig
     for $node in linkNodes
       text = $node.text()
       replaceEls = []
@@ -57,7 +55,7 @@ class Formatter extends Plugin
         replaceEls.push document.createTextNode(text.substring(lastIndex, match.index))
         lastIndex = re.lastIndex
         uri = if /^(http(s)?:\/\/|\/)/.test(match[0]) then match[0] else 'http://' + match[0]
-        replaceEls.push $('<a href="' + uri + '" rel="nofollow">' + match[0] + '</a>')[0]
+        replaceEls.push $('<a href="' + uri + '" rel="nofollow"></a>').text(match[0])[0]
 
       replaceEls.push document.createTextNode(text.substring(lastIndex))
       $node.replaceWith $(replaceEls)
@@ -77,7 +75,7 @@ class Formatter extends Plugin
       if $node.is('br')
         blockNode = null if blockNode?
         $node.remove()
-      else if @editor.util.isBlockNode(node) or $node.is('img:not([data-non-image])')
+      else if @editor.util.isBlockNode(node)
         if $node.is('li')
           if blockNode and blockNode.is('ul, ol')
             blockNode.append node
@@ -94,6 +92,7 @@ class Formatter extends Plugin
 
   cleanNode: (node, recursive) ->
     $node = $(node)
+    return unless $node.length > 0
 
     if $node[0].nodeType == 3
       text = $node.text().replace(/(\r\n|\n|\r)/gm, '')
@@ -109,8 +108,14 @@ class Formatter extends Plugin
 
     if $node.is(@_allowedTags.join(',')) or isDecoration
       # img inside a is not allowed
-      if $node.is('a') and $node.find('img').length > 0
-        contents.first().unwrap()
+      if $node.is('a') and ($childImg = $node.find('img')).length > 0
+        $node.replaceWith $childImg
+        $node = $childImg
+        contents = null
+
+      # exclude uploading img
+      if $node.is('img') and $node.hasClass('uploading')
+        $node.remove()
 
       # Clean attributes except `src` `alt` on `img` tag and `href` `target` on `a` tag
       unless isDecoration
@@ -144,16 +149,17 @@ class Formatter extends Plugin
 
   clearHtml: (html, lineBreak = true) ->
     container = $('<div/>').append(html)
+    contents = container.contents()
     result = ''
 
-    container.contents().each (i, node) =>
+    contents.each (i, node) =>
       if node.nodeType == 3
         result += node.nodeValue
       else if node.nodeType == 1
         $node = $(node)
-        contents = $node.contents()
-        result += @clearHtml contents if contents.length > 0
-        if lineBreak and $node.is 'br, p, div, li, tr, pre, address, artticle, aside, dl, figcaption, footer, h1, h2, h3, h4, header'
+        children = $node.contents()
+        result += @clearHtml children if children.length > 0
+        if lineBreak and i < contents.length - 1 and $node.is 'br, p, div, li, tr, pre, address, artticle, aside, dl, figcaption, footer, h1, h2, h3, h4, header'
           result += '\n'
 
     result
